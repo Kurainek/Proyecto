@@ -1,11 +1,9 @@
-from ElementoMenu import CrearMenu
 import customtkinter as ctk
-from tkinter import ttk, Toplevel, Label, messagebox
+from tkinter import ttk, messagebox
 from Ingrediente import Ingrediente
 from Stock import Stock
 import re
 from PIL import Image
-from CTkMessagebox import CTkMessagebox
 from Pedido import Pedido
 from BoletaFacade import BoletaFacade
 import pandas as pd
@@ -15,9 +13,10 @@ from menu_pdf import create_menu_pdf
 from ctk_pdf_viewer import CTkPDFViewer
 import os
 from tkinter.font import nametofont
+
 class AplicacionConPestanas(ctk.CTk):
-    def __init__(self):
-        super().__init__()
+    def _init_(self):
+        super()._init_()
         
         self.title("Gestión de ingredientes y pedidos")
         self.geometry("870x700")
@@ -26,9 +25,7 @@ class AplicacionConPestanas(ctk.CTk):
 
         self.stock = Stock()
         self.menus_creados = set()
-
         self.pedido = Pedido()
-
         self.menus = get_default_menus()  
   
         self.tabview = ctk.CTkTabview(self,command=self.on_tab_change)
@@ -40,7 +37,6 @@ class AplicacionConPestanas(ctk.CTk):
 
         for item in self.tree.get_children():
             self.tree.delete(item)
-
 
         for ingrediente in self.stock.lista_ingredientes:
             self.tree.insert("", "end", values=(ingrediente.nombre,ingrediente.unidad, ingrediente.cantidad))    
@@ -60,6 +56,7 @@ class AplicacionConPestanas(ctk.CTk):
         if selected_tab == "Boleta":
             self.actualizar_treeview()
             print('Boleta')       
+
     def crear_pestanas(self):
         self.tab3 = self.tabview.add("carga de ingredientes")  
         self.tab1 = self.tabview.add("Stock")
@@ -73,7 +70,7 @@ class AplicacionConPestanas(ctk.CTk):
         self._configurar_pestana_crear_menu()
         self._configurar_pestana_ver_boleta()
 
-    def configurar_pestana3(self):
+    def configurar_pestana3(self): 
         label = ctk.CTkLabel(self.tab3, text="Carga de archivo CSV")
         label.pack(pady=20)
         boton_cargar_csv = ctk.CTkButton(self.tab3, text="Cargar CSV", fg_color="#1976D2", text_color="white",command=self.cargar_csv)
@@ -87,26 +84,69 @@ class AplicacionConPestanas(ctk.CTk):
 
         self.boton_agregar_stock = ctk.CTkButton(self.frame_tabla_csv, text="Agregar al Stock")
         self.boton_agregar_stock.pack(side="bottom", pady=10)
- 
-    def agregar_csv_al_stock(self):
-        if self.df_csv is None:
-            CTkMessagebox(title="Error", message="Primero debes cargar un archivo CSV.", icon="warning")
-            return
-
-        if 'nombre' not in self.df_csv.columns or 'cantidad' not in self.df_csv.columns:
-            CTkMessagebox(title="Error", message="El CSV debe tener columnas 'nombre' y 'cantidad'.", icon="warning")
-            return
-        for _, row in self.df_csv.iterrows():
-            nombre = str(row['nombre'])
-            cantidad = str(row['cantidad'])
-            unidad = str(row['unidad'])
-            ingrediente = Ingrediente(nombre=nombre,unidad=unidad,cantidad=cantidad)
-            self.stock.agregar_ingrediente(ingrediente)
-        CTkMessagebox(title="Stock Actualizado", message="Ingredientes agregados al stock correctamente.", icon="info")
-        self.actualizar_treeview()   
+        self.boton_agregar_stock.configure(command=self.agregar_csv_al_stock)
 
     def cargar_csv(self):
-        pass
+        archivo = filedialog.askopenfilename(
+            title="Selecciona un archivo CSV",
+            filetypes=[("Archivos CSV", "*.csv")]
+        )
+        if archivo:
+            try:
+                df = pd.read_csv(archivo)
+                self.df_csv = df  
+                messagebox.showinfo(
+                    title="CSV Cargado",
+                    message=f"Archivo cargado correctamente.\nFilas: {len(df)}",
+                    icon="info"
+                )
+                self.mostrar_dataframe_en_tabla(df)
+            except Exception as e:
+                messagebox.showwarning(
+                    title="Error",
+                    message=f"Error al cargar el archivo:\n{e}",
+                    icon="warning"
+                )
+        else:
+            messagebox.showwarning(
+                title="Sin archivo",
+                message="No se seleccionó ningún archivo.",
+                icon="warning"
+            )
+
+
+    def agregar_csv_al_stock(self):
+        if self.df_csv is None:
+            messagebox.showwarning(
+                title="Error",
+                message="Primero debes cargar un archivo CSV.",
+                icon="warning"
+            )
+            return
+
+        required_columns = ['nombre', 'unidad', 'cantidad']
+        for col in required_columns:
+            if col not in self.df_csv.columns:
+                messagebox.showwarning(
+                    title="Error",
+                    message=f"El CSV debe tener columna '{col}'.",
+                    icon="warning"
+                )
+                return
+
+        for _, row in self.df_csv.iterrows():
+            nombre = str(row['nombre'])
+            cantidad = float(row['cantidad'])
+            unidad = str(row['unidad'])
+            ingrediente = Ingrediente(nombre=nombre, unidad=unidad, cantidad=cantidad)
+            self.stock.agregar_ingrediente(ingrediente)
+
+        messagebox.showinfo(
+            title="Stock Actualizado",
+            message="Ingredientes agregados al stock correctamente.",
+            icon="info"
+        )
+        self.actualizar_treeview()
         
     def mostrar_dataframe_en_tabla(self, df):
         if self.tabla_csv:
@@ -145,14 +185,24 @@ class AplicacionConPestanas(ctk.CTk):
         self.pdf_frame_carta.pack(expand=True, fill="both", padx=10, pady=10)
 
         self.pdf_viewer_carta = None
+
+        
     def generar_y_mostrar_carta_pdf(self):
         try:
             pdf_path = "carta.pdf"
-            create_menu_pdf(self.menus, pdf_path,
-                titulo_negocio="Restaurante",
-                subtitulo="Carta Primavera 2025",
-                moneda="$")
-            
+            menus_disponibles = [menu for menu in self.menus if menu.esta_disponible(self.stock)]
+            if not menus_disponibles:
+                messagebox.showinfo(
+                    title="Sin Menús Disponibles",
+                    message="No hay menús disponibles según el stock actual.",
+                    icon="info")
+                return
+
+            create_menu_pdf(menus_disponibles, pdf_path,
+                            titulo_negocio="Restaurante",
+                            subtitulo="Carta Primavera 2025",
+                            moneda="$")
+
             if self.pdf_viewer_carta is not None:
                 try:
                     self.pdf_viewer_carta.pack_forget()
@@ -166,7 +216,9 @@ class AplicacionConPestanas(ctk.CTk):
             self.pdf_viewer_carta.pack(expand=True, fill="both")
 
         except Exception as e:
-            CTkMessagebox(title="Error", message=f"No se pudo generar/mostrar la carta.\n{e}", icon="warning")
+            messagebox.showwarning(title="Error",
+                       message=f"No se pudo generar la carta.\n{e}",
+                       icon="warning")
 
     def _configurar_pestana_ver_boleta(self):
         contenedor = ctk.CTkFrame(self.tab5)
@@ -186,26 +238,49 @@ class AplicacionConPestanas(ctk.CTk):
         
 
     def mostrar_boleta(self):
-        pass
+        try:
+            if not hasattr(self, "pedido") or not self.pedido:
+                messagebox.showwarning(title="Atención",
+                                       message="No hay pedido para generar la boleta.",
+                                       icon="warning")
+                return
 
-    def configurar_pestana1(self):
-        # Dividir la Pestaña 1 en dos frames
+            boleta_facade = BoletaFacade(self.pedido)
+            pdf_path = boleta_facade.crear_pdf()
+
+            if self.pdf_viewer_boleta is not None:
+                try:
+                    self.pdf_viewer_boleta.pack_forget()
+                    self.pdf_viewer_boleta.destroy()
+                except Exception:
+                    pass
+                self.pdf_viewer_boleta = None
+
+            abs_pdf = os.path.abspath(pdf_path)
+            self.pdf_viewer_boleta = CTkPDFViewer(self.pdf_frame_boleta, file=abs_pdf)
+            self.pdf_viewer_boleta.pack(expand=True, fill="both")
+
+        except Exception as e:
+            messagebox.showwarning(
+                title="Error", 
+                message=f"No se pudo generar/mostrar la boleta.\n{e}", 
+                icon="warning")
+
+    def configurar_pestana1(self): 
         frame_formulario = ctk.CTkFrame(self.tab1)
         frame_formulario.pack(side="left", fill="both", expand=True, padx=10, pady=10)
 
         frame_treeview = ctk.CTkFrame(self.tab1)
         frame_treeview.pack(side="right", fill="both", expand=True, padx=10, pady=10)
 
-        # Formulario en el primer frame
+        # Form
         label_nombre = ctk.CTkLabel(frame_formulario, text="Nombre del Ingrediente:")
         label_nombre.pack(pady=5)
         self.entry_nombre = ctk.CTkEntry(frame_formulario)
         self.entry_nombre.pack(pady=5)
 
-        label_cantidad = ctk.CTkLabel(frame_formulario, text="Unidad:")
-        label_cantidad.pack(pady=5)
-        self.combo_unidad = ctk.CTkComboBox(frame_formulario, values=["kg", "unid"])
-        self.combo_unidad.pack(pady=5)
+        label_unidad = ctk.CTkLabel(frame_formulario, text="Unidad: unid")
+        label_unidad.pack(pady=5)
 
         label_cantidad = ctk.CTkLabel(frame_formulario, text="Cantidad:")
         label_cantidad.pack(pady=5)
@@ -229,6 +304,7 @@ class AplicacionConPestanas(ctk.CTk):
 
         self.boton_generar_menu = ctk.CTkButton(frame_treeview, text="Generar Menú", command=self.generar_menus)
         self.boton_generar_menu.pack(pady=10)
+        
     def tarjeta_click(self, event, menu):
         suficiente_stock = True
         if self.stock.lista_ingredientes==[]:

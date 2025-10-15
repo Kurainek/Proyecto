@@ -1,5 +1,4 @@
-
-
+#ctk_pdf_viewer.py
 import customtkinter
 from PIL import Image
 import fitz
@@ -9,7 +8,7 @@ import io
 import os
 
 class CTkPDFViewer(customtkinter.CTkScrollableFrame):
-    def __init__(self,
+    def _init_(self,
                  master: any,
                  file: str,
                  page_width: int = 600,
@@ -17,7 +16,7 @@ class CTkPDFViewer(customtkinter.CTkScrollableFrame):
                  page_separation_height: int = 2,
                  **kwargs):
         
-        super().__init__(master, **kwargs)
+        super()._init_(master, **kwargs)
 
         self.page_width = page_width
         self.page_height = page_height
@@ -42,7 +41,6 @@ class CTkPDFViewer(customtkinter.CTkScrollableFrame):
         Thread(target=self.add_pages).start()
         
     def add_pages(self):
-        """ add images and labels """
         self.percentage_bar = 0
         open_pdf = fitz.open(self.file)
         
@@ -51,6 +49,7 @@ class CTkPDFViewer(customtkinter.CTkScrollableFrame):
             pix = fitz.Pixmap(page_data, 0) if page_data.alpha else page_data
             img = Image.open(io.BytesIO(pix.tobytes('ppm')))
             label_img = customtkinter.CTkImage(img, size=(self.page_width, self.page_height))
+
             self.pdf_images.append(label_img)
                 
             self.percentage_bar = self.percentage_bar + 1
@@ -68,7 +67,6 @@ class CTkPDFViewer(customtkinter.CTkScrollableFrame):
             self.labels.append(label)
         
     def configure(self, **kwargs):
-        """ configurable options """
         
         if "file" in kwargs:
             self.file = kwargs.pop("file")
