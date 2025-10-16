@@ -303,7 +303,7 @@ class AplicacionConPestanas(ctk.CTk):
         self.tree.pack(expand=True, fill="both", padx=10, pady=10)
 
         self.boton_generar_menu = ctk.CTkButton(frame_treeview, text="Generar Menú", command=self.generar_menus)
-        self.boton_generar_menu.pack(pady=10) #🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡
+        self.boton_generar_menu.pack(pady=10) 
         
     def tarjeta_click(self, event, menu):
         suficiente_stock = True
@@ -370,7 +370,7 @@ class AplicacionConPestanas(ctk.CTk):
             tarjeta.pack(side="left", padx=10, pady=10)
 
 
-    def eliminar_menu(self): #o plato
+    def eliminar_menu(self): 
         seleccion = self.treeview_menu.selection()
         if not seleccion:
             messagebox.showwarning(
