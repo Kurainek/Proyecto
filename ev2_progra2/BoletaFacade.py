@@ -2,7 +2,7 @@ from fpdf import FPDF
 from datetime import datetime
 
 class BoletaFacade:
-    def _init_(self, pedido):
+    def __init__(self, pedido):
         self.pedido = pedido
         self.detalle = ""
         self.subtotal = 0.0
@@ -66,4 +66,4 @@ class BoletaFacade:
 
     def generar_boleta(self):
         pdf_path = self.crear_pdf()
-        return f"Boleta generada y guardada en: {pdf_path}"
+        return f"Boleta generada y guardada en: {pdf_path}"

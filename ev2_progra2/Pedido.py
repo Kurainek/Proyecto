@@ -1,6 +1,6 @@
 from ElementoMenu import CrearMenu 
 class Pedido:
-    def _init_(self):
+    def __init__(self):
         self.menus = []  
 
     def agregar_menu(self, menu: CrearMenu):
@@ -32,4 +32,4 @@ class Pedido:
         total = 0
         for m in self.menus:
             total += m.precio * m.cantidad
-            return total
+        return total

@@ -1,4 +1,3 @@
-#ctk_pdf_viewer.py
 import customtkinter
 from PIL import Image
 import fitz
@@ -8,7 +7,7 @@ import io
 import os
 
 class CTkPDFViewer(customtkinter.CTkScrollableFrame):
-    def _init_(self,
+    def __init__(self,
                  master: any,
                  file: str,
                  page_width: int = 600,
@@ -16,7 +15,7 @@ class CTkPDFViewer(customtkinter.CTkScrollableFrame):
                  page_separation_height: int = 2,
                  **kwargs):
         
-        super()._init_(master, **kwargs)
+        super().__init__(master, **kwargs)
 
         self.page_width = page_width
         self.page_height = page_height

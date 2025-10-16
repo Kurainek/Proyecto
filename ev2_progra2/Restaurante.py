@@ -15,8 +15,8 @@ import os
 from tkinter.font import nametofont
 
 class AplicacionConPestanas(ctk.CTk):
-    def _init_(self):
-        super()._init_()
+    def __init__(self):
+        super().__init__()
         
         self.title("Gestión de ingredientes y pedidos")
         self.geometry("870x700")
@@ -303,48 +303,123 @@ class AplicacionConPestanas(ctk.CTk):
         self.tree.pack(expand=True, fill="both", padx=10, pady=10)
 
         self.boton_generar_menu = ctk.CTkButton(frame_treeview, text="Generar Menú", command=self.generar_menus)
-        self.boton_generar_menu.pack(pady=10)
+        self.boton_generar_menu.pack(pady=10) #🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡
         
     def tarjeta_click(self, event, menu):
         suficiente_stock = True
-        if self.stock.lista_ingredientes==[]:
-            suficiente_stock=False
+
+        if not self.stock.lista_ingredientes:
+            suficiente_stock = False
+
         for ingrediente_necesario in menu.ingredientes:
-            for ingrediente_stock in self.stock.lista_ingredientes:
-                if ingrediente_necesario.nombre == ingrediente_stock.nombre:
-                    if int(ingrediente_stock.cantidad) < int(ingrediente_necesario.cantidad):
-                        suficiente_stock = False
-                        break
-            if not suficiente_stock:
+            ingrediente_en_stock = next(
+                (i for i in self.stock.lista_ingredientes if i.nombre == ingrediente_necesario.nombre),
+                None
+            )
+            if not ingrediente_en_stock or ingrediente_en_stock.cantidad < ingrediente_necesario.cantidad:
+                suficiente_stock = False
                 break
-        
+
         if suficiente_stock:
             for ingrediente_necesario in menu.ingredientes:
                 for ingrediente_stock in self.stock.lista_ingredientes:
                     if ingrediente_necesario.nombre == ingrediente_stock.nombre:
-                        ingrediente_stock.cantidad = str(int(ingrediente_stock.cantidad) - int(ingrediente_necesario.cantidad))
-            
+                        ingrediente_stock.cantidad -= ingrediente_necesario.cantidad
+
             self.pedido.agregar_menu(menu)
             self.actualizar_treeview_pedido()
             total = self.pedido.calcular_total()
             self.label_total.configure(text=f"Total: ${total:.2f}")
         else:
-            CTkMessagebox(title="Stock Insuficiente", message=f"No hay suficientes ingredientes para preparar el menú '{menu.nombre}'.", icon="warning")
+            messagebox.showwarning(
+                title="Stock Insuficiente",
+                message=f"No hay suficientes ingredientes para preparar '{menu.nombre}'.",
+                icon="warning"
+            )
     
     def cargar_icono_menu(self, ruta_icono):
-        imagen = Image.open(ruta_icono)
-        icono_menu = ctk.CTkImage(imagen, size=(64, 64))
-        return icono_menu
-
+        try:
+            imagen = Image.open(ruta_icono)
+            return ctk.CTkImage(imagen, size=(64, 64))
+        except FileNotFoundError:
+            print(f"error, No se encontró el icono")
+            return None
     
     def generar_menus(self):
-        pass
+        self.menus_disponibles = []
+        menus = get_default_menus()
 
-    def eliminar_menu(self):
-        pass
+        for menu in menus:
+            if menu.esta_disponible(self.stock):
+                self.menus_disponibles.append(menu)
+
+        for widget in self.frame_menus.winfo_children():
+            widget.destroy()
+
+        for menu in self.menus_disponibles:
+            icono = self.cargar_icono_menu(menu.icono_path)
+            tarjeta = ctk.CTkButton(
+                self.frame_menus,
+                image=icono,
+                text=f"{menu.nombre}\n${menu.precio}",
+                compound="top",
+                width=150,
+                height=150,
+                command=lambda m=menu: self.tarjeta_click(None, m)
+            )
+            tarjeta.pack(side="left", padx=10, pady=10)
+
+
+    def eliminar_menu(self): #o plato
+        seleccion = self.treeview_menu.selection()
+        if not seleccion:
+            messagebox.showwarning(
+                title="Atención", 
+                message="Selecciona un menú para eliminar.", 
+                icon="warning")
+            return
+
+        item = self.treeview_menu.item(seleccion[0])
+        nombre_menu = item["values"][0]
+
+        menu_encontrado = next((m for m in self.pedido.menus if m.nombre == nombre_menu), None)
+        if menu_encontrado:
+            for ing in menu_encontrado.ingredientes:
+                for ing_stock in self.stock.lista_ingredientes:
+                    if ing_stock.nombre == ing.nombre:
+                        ing_stock.cantidad += ing.cantidad
+                        break
+            self.pedido.eliminar_menu(nombre_menu)
+            self.actualizar_treeview_pedido()
+
+            total = self.pedido.calcular_total()
+            self.label_total.configure(text=f"Total: ${total:.2f}")
+
+
 
     def generar_boleta(self):
-        pass
+        if not self.pedido.menus:
+            messagebox.showwarning(
+                title="Advertencia", 
+                message="No hay menús en el pedido.", 
+                icon="warning")
+            return
+
+        try:
+            from BoletaFacade import BoletaFacade
+
+            boleta = BoletaFacade(self.pedido)
+            boleta.generar_boleta()
+
+            self.mostrar_boleta()
+            messagebox.showinfo(
+                title="Éxito",
+                message="Boleta generada correctamente.")
+        except Exception as e:
+            messagebox.showwarning(
+                title="Error", 
+                message=f"No se pudo generar la boleta.\n{e}", 
+                icon="warning")
 
     def configurar_pestana2(self):
         frame_superior = ctk.CTkFrame(self.tab2)
@@ -353,9 +428,8 @@ class AplicacionConPestanas(ctk.CTk):
         frame_intermedio = ctk.CTkFrame(self.tab2)
         frame_intermedio.pack(side="top", fill="x", padx=10, pady=5)
 
-        global tarjetas_frame
-        tarjetas_frame = ctk.CTkFrame(frame_superior)
-        tarjetas_frame.pack(expand=True, fill="both", padx=10, pady=10)
+        self.frame_menus = ctk.CTkScrollableFrame(frame_superior, orientation= "horizontal")
+        self.frame_menus.pack(expand=True, fill="both", padx=10, pady=10)
 
         self.boton_eliminar_menu = ctk.CTkButton(frame_intermedio, text="Eliminar Menú", command=self.eliminar_menu)
         self.boton_eliminar_menu.pack(side="right", padx=10)
@@ -381,7 +455,7 @@ class AplicacionConPestanas(ctk.CTk):
         columna = num_tarjetas
 
         tarjeta = ctk.CTkFrame(
-            tarjetas_frame,
+            self.frame_menus,
             corner_radius=10,
             border_width=1,
             border_color="#4CAF50",
@@ -421,24 +495,62 @@ class AplicacionConPestanas(ctk.CTk):
         if re.match(r"^[a-zA-Z\s]+$", nombre):
             return True
         else:
-            CTkMessagebox(title="Error de Validación", message="El nombre debe contener solo letras y espacios.", icon="warning")
+            messagebox.showwarning(
+                title="Error de Validación", 
+                message="El nombre debe contener solo letras, mayúsculas, minúsculas y espacios despues de una letra.", 
+                icon="warning")
             return False
 
     def validar_cantidad(self, cantidad):
         if cantidad.isdigit():
             return True
         else:
-            CTkMessagebox(title="Error de Validación", message="La cantidad debe ser un número entero positivo.", icon="warning")
+            messagebox.showwarning(
+                title="Error de Validación", 
+                message="La cantidad debe ser un número entero positivo.", 
+                icon="warning")
             return False
 
     def ingresar_ingrediente(self):
-        pass
+        nombre = self.entry_nombre.get().strip()
+        cantidad = self.entry_cantidad.get().strip()
+
+        if not self.validar_nombre(nombre) or not self.validar_cantidad(cantidad):
+            return
+
+        cantidad = float(cantidad)
+        unidad = "unid"
+
+        ingrediente = Ingrediente(nombre=nombre, unidad=unidad, cantidad=cantidad)
+        self.stock.agregar_ingrediente(ingrediente)
+        self.actualizar_treeview()
 
     def eliminar_ingrediente(self):
-        pass
+        selected_items = self.tree.selection()
+        if not selected_items:
+            messagebox.showwarning(
+                title="Error", 
+                message="Debe seleccionar un ingrediente para eliminar.", 
+                icon="warning")
+            return
+
+        for item in selected_items:
+            values = self.tree.item(item, "values")
+            nombre = values[0]
+            self.stock.eliminar_ingrediente(nombre)
+
+        self.actualizar_treeview()
+
+        for menu in self.menus:
+            if not menu.esta_disponible(self.stock):
+                print(f"No hay suficientes ingredientes para el menú '{menu.nombre}'")
 
     def actualizar_treeview(self):
-        pass
+        for item in getattr(self, "tree", []).get_children():
+            self.tree.delete(item)
+
+        for ingrediente in self.stock.lista_ingredientes:
+            self.tree.insert("", "end", values=(ingrediente.nombre, ingrediente.unidad, ingrediente.cantidad))
 
 
 if __name__ == "__main__":

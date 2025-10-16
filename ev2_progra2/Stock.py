@@ -1,7 +1,7 @@
 from Ingrediente import Ingrediente
 
 class Stock:
-    def _init_(self):
+    def __init__(self):
         self.lista_ingredientes = []
 
     def agregar_ingrediente(self, ingrediente: Ingrediente):
