@@ -1,21 +1,35 @@
+import logging
+from typing import Optional, List
+
 import customtkinter as ctk
 from tkinter import ttk, messagebox
-from Ingrediente import Ingrediente
-from Stock import Stock
+from tkinter import filedialog
+from tkinter.font import nametofont
+
+import os
 import re
 from PIL import Image
+
+import pandas as pd
+
+from Ingrediente import Ingrediente
+from Stock import Stock
 from Pedido import Pedido
 from BoletaFacade import BoletaFacade
-import pandas as pd
-from tkinter import filedialog
 from Menu_catalog import get_default_menus
 from menu_pdf import create_menu_pdf
 from ctk_pdf_viewer import CTkPDFViewer
-import os
-from tkinter.font import nametofont
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class AplicacionConPestanas(ctk.CTk):
-    def __init__(self):
+    """Aplicación principal con pestañas para gestionar stock, pedidos y boletas.
+
+    Esta clase encapsula la interfaz y la interacción con las entidades del
+    dominio (Stock, Pedido, Ingrediente, etc.).
+    """
+    def __init__(self) -> None:
         super().__init__()
         
         self.title("Gestión de ingredientes y pedidos")
@@ -33,13 +47,20 @@ class AplicacionConPestanas(ctk.CTk):
 
         self.crear_pestanas()
 
-    def actualizar_treeview(self):
+    def actualizar_treeview(self) -> None:
+        """Actualiza la vista de árbol (`self.tree`) con el contenido del stock.
 
-        for item in self.tree.get_children():
-            self.tree.delete(item)
+        Si el treeview aún no existe, la función sale silenciosamente.
+        """
+        tree = getattr(self, "tree", None)
+        if tree is None:
+            return
+
+        for item in tree.get_children():
+            tree.delete(item)
 
         for ingrediente in self.stock.lista_ingredientes:
-            self.tree.insert("", "end", values=(ingrediente.nombre,ingrediente.unidad, ingrediente.cantidad))    
+            tree.insert("", "end", values=(ingrediente.nombre, ingrediente.unidad, ingrediente.cantidad))
 
     def on_tab_change(self):
         selected_tab = self.tabview.get()
@@ -342,7 +363,10 @@ class AplicacionConPestanas(ctk.CTk):
             imagen = Image.open(ruta_icono)
             return ctk.CTkImage(imagen, size=(64, 64))
         except FileNotFoundError:
-            print(f"error, No se encontró el icono")
+            logger.debug("No se encontró el icono: %s", ruta_icono)
+            return None
+        except Exception as e:
+            logger.exception("Error al cargar icono '%s': %s", ruta_icono, e)
             return None
     
     def generar_menus(self):
@@ -492,23 +516,47 @@ class AplicacionConPestanas(ctk.CTk):
         texto_label.bind("<Button-1>", lambda event: self.tarjeta_click(event, menu))
 
     def validar_nombre(self, nombre):
-        if re.match(r"^[a-zA-Z\s]+$", nombre):
-            return True
-        else:
+        """Valida que `nombre` contenga solo letras y espacios (incluye caracteres Unicode)."""
+        if not nombre:
             messagebox.showwarning(
-                title="Error de Validación", 
-                message="El nombre debe contener solo letras, mayúsculas, minúsculas y espacios despues de una letra.", 
-                icon="warning")
+                title="Error de Validación",
+                message="El nombre no puede estar vacío.",
+                icon="warning",
+            )
             return False
 
-    def validar_cantidad(self, cantidad):
-        if cantidad.isdigit():
+        # Aceptar letras Unicode y espacios
+        if all((ch.isalpha() or ch.isspace()) for ch in nombre):
             return True
-        else:
+
+        messagebox.showwarning(
+            title="Error de Validación",
+            message="El nombre debe contener sólo letras y espacios.",
+            icon="warning",
+        )
+        return False
+
+    def validar_cantidad(self, cantidad):
+        """Valida que `cantidad` sea un número positivo (entero o decimal)."""
+        if not cantidad:
             messagebox.showwarning(
-                title="Error de Validación", 
-                message="La cantidad debe ser un número entero positivo.", 
-                icon="warning")
+                title="Error de Validación",
+                message="La cantidad no puede estar vacía.",
+                icon="warning",
+            )
+            return False
+
+        try:
+            val = float(cantidad)
+            if val < 0:
+                raise ValueError("negativo")
+            return True
+        except Exception:
+            messagebox.showwarning(
+                title="Error de Validación",
+                message="La cantidad debe ser un número positivo (p. ej. 1 o 1.5).",
+                icon="warning",
+            )
             return False
 
     def ingresar_ingrediente(self):
@@ -518,10 +566,18 @@ class AplicacionConPestanas(ctk.CTk):
         if not self.validar_nombre(nombre) or not self.validar_cantidad(cantidad):
             return
 
-        cantidad = float(cantidad)
-        unidad = "unid"
+        try:
+            cantidad_val = float(cantidad)
+        except ValueError:
+            messagebox.showwarning(
+                title="Error de Validación",
+                message="La cantidad ingresada no es un número válido.",
+                icon="warning",
+            )
+            return
 
-        ingrediente = Ingrediente(nombre=nombre, unidad=unidad, cantidad=cantidad)
+        unidad = "unid"
+        ingrediente = Ingrediente(nombre=nombre, unidad=unidad, cantidad=cantidad_val)
         self.stock.agregar_ingrediente(ingrediente)
         self.actualizar_treeview()
 
@@ -537,13 +593,17 @@ class AplicacionConPestanas(ctk.CTk):
         for item in selected_items:
             values = self.tree.item(item, "values")
             nombre = values[0]
-            self.stock.eliminar_ingrediente(nombre)
+            try:
+                self.stock.eliminar_ingrediente(nombre)
+            except Exception as e:
+                logger.exception("Error al eliminar ingrediente '%s': %s", nombre, e)
 
         self.actualizar_treeview()
 
+        # Mensaje informativo si algún menú queda indisponible
         for menu in self.menus:
             if not menu.esta_disponible(self.stock):
-                print(f"No hay suficientes ingredientes para el menú '{menu.nombre}'")
+                logger.info("No hay suficientes ingredientes para el menú '%s'", menu.nombre)
 
     def actualizar_treeview(self):
         for item in getattr(self, "tree", []).get_children():
