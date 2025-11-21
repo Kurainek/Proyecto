@@ -1,4 +1,4 @@
-"""Script para generar datos o reportes de ejemplo (versión en español)."""
+"""Script para generar datos o reportes de ejemplo."""
 
 import json
 from pathlib import Path

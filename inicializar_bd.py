@@ -1,4 +1,4 @@
-"""Script para inicializar la base de datos (versión en español)."""
+"""Script para inicializar la base de datos ."""
 from base_datos import engine
 try:
     from modelos import Base

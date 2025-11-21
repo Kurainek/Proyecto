@@ -1,4 +1,4 @@
-"""Funciones de estadísticas (versión en español).
+"""Funciones de estadísticas.
 Punto de integración con la UI para mostrar top productos y totales.
 """
 

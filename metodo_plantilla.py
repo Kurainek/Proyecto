@@ -1,4 +1,4 @@
-"""Ejemplo de patrón Método Plantilla (versión en español)."""
+"""Ejemplo de patrón Método Plantilla."""
 
 from abc import ABC, abstractmethod
 

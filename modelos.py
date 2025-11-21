@@ -1,4 +1,4 @@
-"""Modelos SQLAlchemy (versión en español).
+"""Modelos SQLAlchemy.
 Define tus entidades principales aquí.
 """
 

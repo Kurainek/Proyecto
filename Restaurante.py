@@ -1,6 +1,7 @@
 import logging
 import customtkinter as ctk
-from tkinter import ttk, messagebox
+import tkinter.ttk as ttk
+from CTkMessagebox import CTkMessagebox
 from tkinter import filedialog
 from tkinter.font import nametofont
 import os
@@ -143,41 +144,46 @@ class AplicacionConPestanas(ctk.CTk):
             try:
                 df = pd.read_csv(archivo)
                 self.df_csv = df
-                messagebox.showinfo(
+                CTkMessagebox(
                     title="CSV Cargado",
                     message=f"Archivo cargado correctamente.\nFilas: {len(df)}",
                     icon="info",
+                    sound=False,
                 )
                 self.mostrar_dataframe_en_tabla(df)
             except Exception as e:
-                messagebox.showwarning(
+                CTkMessagebox(
                     title="Error",
                     message=f"Error al cargar el archivo:\n{e}",
                     icon="warning",
+                    sound=False,
                 )
         else:
-            messagebox.showwarning(
+            CTkMessagebox(
                 title="Sin archivo",
                 message="No se seleccionó ningún archivo.",
                 icon="warning",
+                sound=False,
             )
 
     def agregar_csv_al_stock(self):
         if self.df_csv is None:
-            messagebox.showwarning(
+            CTkMessagebox(
                 title="Error",
                 message="Primero debes cargar un archivo CSV.",
                 icon="warning",
+                sound=False,
             )
             return
 
         required_columns = ["nombre", "unidad", "cantidad"]
         for col in required_columns:
             if col not in self.df_csv.columns:
-                messagebox.showwarning(
+                CTkMessagebox(
                     title="Error",
                     message=f"El CSV debe tener columna '{col}'.",
                     icon="warning",
+                    sound=False,
                 )
                 return
 
@@ -190,10 +196,11 @@ class AplicacionConPestanas(ctk.CTk):
             )
             self.stock.agregar_ingrediente(ingrediente)
 
-        messagebox.showinfo(
+        CTkMessagebox(
             title="Stock Actualizado",
             message="Ingredientes agregados al stock correctamente.",
             icon="info",
+            sound=False,
         )
         self.actualizar_treeview()
 
@@ -252,10 +259,11 @@ class AplicacionConPestanas(ctk.CTk):
             ]
 
             if not menus_disponibles:
-                messagebox.showinfo(
+                CTkMessagebox(
                     title="Sin Menús Disponibles",
                     message="No hay menús disponibles según el stock actual.",
                     icon="info",
+                    sound=False,
                 )
                 return
 
@@ -281,10 +289,11 @@ class AplicacionConPestanas(ctk.CTk):
             self.pdf_viewer_carta.pack(expand=True, fill="both")
 
         except Exception as e:
-            messagebox.showwarning(
+            CTkMessagebox(
                 title="Error",
                 message=f"No se pudo generar la carta.\n{e}",
                 icon="warning",
+                sound=False,
             )
 
     def _configurar_pestana_ver_boleta(self):
@@ -307,10 +316,11 @@ class AplicacionConPestanas(ctk.CTk):
     def mostrar_boleta(self):
         try:
             if not hasattr(self, "pedido") or not self.pedido:
-                messagebox.showwarning(
+                CTkMessagebox(
                     title="Atención",
                     message="No hay pedido para generar la boleta.",
                     icon="warning",
+                    sound=False,
                 )
                 return
 
@@ -331,10 +341,11 @@ class AplicacionConPestanas(ctk.CTk):
             self.pdf_viewer_boleta.pack(expand=True, fill="both")
 
         except Exception as e:
-            messagebox.showwarning(
+            CTkMessagebox(
                 title="Error",
                 message=f"No se pudo generar/mostrar la boleta.\n{e}",
                 icon="warning",
+                sound=False,
             )
 
     def configurar_pestana1(self):
@@ -427,13 +438,14 @@ class AplicacionConPestanas(ctk.CTk):
             total = self.pedido.calcular_total()
             self.label_total.configure(text=f"Total: ${total:.2f}")
         else:
-            messagebox.showwarning(
+            CTkMessagebox(
                 title="Stock Insuficiente",
                 message=(
                     f"No hay suficientes ingredientes para preparar "
                     f"'{menu.nombre}'"
                 ),
                 icon="warning",
+                sound=False,
             )
 
     def cargar_icono_menu(self, ruta_icono):
@@ -477,10 +489,11 @@ class AplicacionConPestanas(ctk.CTk):
     def eliminar_menu(self):
         seleccion = self.treeview_menu.selection()
         if not seleccion:
-            messagebox.showwarning(
+            CTkMessagebox(
                 title="Atención",
                 message="Selecciona un menú para eliminar.",
                 icon="warning",
+                sound=False,
             )
             return
 
@@ -515,10 +528,11 @@ class AplicacionConPestanas(ctk.CTk):
     @manejar_errores()
     def generar_boleta(self):
         if not self.pedido.menus:
-            messagebox.showwarning(
+            CTkMessagebox(
                 title="Advertencia",
                 message="No hay menús en el pedido.",
                 icon="warning",
+                sound=False,
             )
             return
 
@@ -527,15 +541,18 @@ class AplicacionConPestanas(ctk.CTk):
             boleta.generar_boleta()
 
             self.mostrar_boleta()
-            messagebox.showinfo(
+            CTkMessagebox(
                 title="Éxito",
                 message="Boleta generada correctamente.",
+                icon="info",
+                sound=False,
             )
         except Exception as e:
-            messagebox.showwarning(
+            CTkMessagebox(
                 title="Error",
                 message=f"No se pudo generar la boleta.\n{e}",
                 icon="warning",
+                sound=False,
             )
 
     def configurar_pestana2(self):
@@ -717,10 +734,11 @@ class AplicacionConPestanas(ctk.CTk):
         Permite caracteres Unicode.
         """
         if not nombre:
-            messagebox.showwarning(
+            CTkMessagebox(
                 title="Error de Validación",
                 message="El nombre no puede estar vacío.",
                 icon="warning",
+                sound=False,
             )
             return False
 
@@ -728,20 +746,22 @@ class AplicacionConPestanas(ctk.CTk):
         if all((ch.isalpha() or ch.isspace()) for ch in nombre):
             return True
 
-        messagebox.showwarning(
+        CTkMessagebox(
             title="Error de Validación",
             message="El nombre debe contener sólo letras y espacios.",
             icon="warning",
+            sound=False,
         )
         return False
 
     def validar_cantidad(self, cantidad):
         """Valida que `cantidad` sea un número positivo (entero o decimal)."""
         if not cantidad:
-            messagebox.showwarning(
+            CTkMessagebox(
                 title="Error de Validación",
                 message="La cantidad no puede estar vacía.",
                 icon="warning",
+                sound=False,
             )
             return False
 
@@ -751,10 +771,11 @@ class AplicacionConPestanas(ctk.CTk):
                 raise ValueError("negativo")
             return True
         except Exception:
-            messagebox.showwarning(
+            CTkMessagebox(
                 title="Error de Validación",
                 message="La cantidad debe ser un número positivo (p. ej. 1 o 1.5).",
                 icon="warning",
+                sound=False,
             )
             return False
 
@@ -769,10 +790,11 @@ class AplicacionConPestanas(ctk.CTk):
         try:
             cantidad_val = float(cantidad)
         except ValueError:
-            messagebox.showwarning(
+            CTkMessagebox(
                 title="Error de Validación",
                 message="La cantidad ingresada no es un número válido.",
                 icon="warning",
+                sound=False,
             )
             return
 
@@ -785,10 +807,11 @@ class AplicacionConPestanas(ctk.CTk):
     def eliminar_ingrediente(self):
         selected_items = self.tree.selection()
         if not selected_items:
-            messagebox.showwarning(
+            CTkMessagebox(
                 title="Error",
                 message="Debe seleccionar un ingrediente para eliminar.",
                 icon="warning",
+                sound=False,
             )
             return
 
@@ -818,6 +841,9 @@ if __name__ == "__main__":
     ctk.set_window_scaling(1.0)
 
     app = AplicacionConPestanas()
+
+    # Desactiva el beep de todas las ventanas de alerta
+    app.bell = lambda *args, **kwargs: None
 
     try:
         style = ttk.Style(app)

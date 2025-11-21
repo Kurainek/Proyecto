@@ -1,4 +1,4 @@
-"""Funciones para cargar reportes (versión en español)."""
+"""Funciones para cargar reportes."""
 
 import json
 from pathlib import Path

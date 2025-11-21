@@ -1,4 +1,4 @@
-"""Utilidades generales en español."""
+"""Utilidades generales."""
 
 
 def formatear_precio(valor: float) -> str:

@@ -1,4 +1,4 @@
-"""Gestor de cache simple con TTL (versión en español).
+"""Gestor de cache simple con TTL 
 Uso: aplicar el decorador `cached(ttl=60)` sobre funciones que quieran ser memorizadas.
 """
 

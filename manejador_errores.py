@@ -1,4 +1,4 @@
-"""Manejador de errores y excepciones del proyecto (español)."""
+"""Manejador de errores y excepciones del proyecto."""
 
 from functools import wraps
 

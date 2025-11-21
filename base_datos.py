@@ -1,4 +1,4 @@
-"""Helpers para conectar a la base de datos (versión en español)."""
+"""Helpers para conectar a la base de datos."""
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import os
