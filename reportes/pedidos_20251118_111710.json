@@ -1,0 +1,3 @@
+[
+  {"id": 1, "cliente": "Ana", "total": 1200, "items": [{"menu":"Hamburguesa", "cantidad":1}]}
+]

@@ -1,0 +1,8 @@
+customtkinter
+Pillow
+fpdf
+PyMuPDF
+SQLAlchemy
+psycopg2-binary
+pytest
+flake8
